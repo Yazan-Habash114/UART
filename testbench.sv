@@ -24,7 +24,7 @@ module UART_Test;
     clk = 0;
     reset = 1;
     ticks_per_bit = 2;   // Tick half cycle = (2+1) * CLK_PERIOD
-						 // Hence, cycle = 3 * 10 * 2 = 60ns
+			 // Hence, cycle = 3 * 10 * 2 = 60ns
     tx_start = 0;
     tx_data_in = 8'hb4;  // Even parity = 0
     rx = 1;
