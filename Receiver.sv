@@ -36,6 +36,7 @@ module Receiver #(parameter DATA_BITS = 8, SB_TICKS = 1, IS_PARITY = 0, PARITY =
           stop_bits_counter = 0;
           rx_done = 0;
           finish_data = 0;
+          parity_calculated = 0;
         end else next_state = START;
       end
       
@@ -51,15 +52,13 @@ module Receiver #(parameter DATA_BITS = 8, SB_TICKS = 1, IS_PARITY = 0, PARITY =
             next_state = STOP;
             if(IS_PARITY) begin
               parity_received = rx;
-              parity_calculated = bits[0];
-              for(integer i = 1; i < DATA_BITS; i = i + 1)
-                parity_calculated = parity_calculated ^ bits[i];
               parity_calculated = (PARITY == 1) ? ~parity_calculated : parity_calculated;   // If 1 odd
             end
           end else begin
             next_state = DATA;
             bits = {rx, bits[DATA_BITS - 1:1]};   // Shifting right
           	data_counter = data_counter + 1;
+            parity_calculated = parity_calculated ^ rx;
           end
         end
       end
