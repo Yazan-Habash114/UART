@@ -37,6 +37,7 @@ module Transmitter #(parameter DATA_BITS = 8, SB_TICKS = 1, IS_PARITY = 0, PARIT
           tx_done = 0;
           bits = tx_din;
           tx = 1;
+          parity = tx_din[0];
         end else next_state = START;
       end
       
@@ -52,10 +53,7 @@ module Transmitter #(parameter DATA_BITS = 8, SB_TICKS = 1, IS_PARITY = 0, PARIT
             data_counter = 0;
             next_state = STOP;
             if(IS_PARITY) begin
-              parity = tx_din[0];
-              for(integer i = 1; i < DATA_BITS; i = i + 1)
-                parity = parity ^ tx_din[i];
-              parity = (PARITY == 1) ? ~parity : parity;// If 1 odd
+              parity = (PARITY == 1) ? ~parity : parity;   // If 1 odd
               tx = parity;
             end else tx = 1;
           end else begin
@@ -63,6 +61,7 @@ module Transmitter #(parameter DATA_BITS = 8, SB_TICKS = 1, IS_PARITY = 0, PARIT
             tx = bits[0];
             bits = bits >> 1;   // Shifting right
           	data_counter = data_counter + 1;
+            parity = parity ^ bits[0];
           end
         end
       end
