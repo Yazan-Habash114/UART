@@ -1,8 +1,12 @@
-module Transmitter #(parameter DATA_BITS = 8, SB_TICKS = 1, IS_PARITY = 0, PARITY = 0) (
+module Transmitter (
   input wire tx_tick,
   input wire tx_start,
   input wire reset,
-  input wire [DATA_BITS - 1:0] tx_din,
+  input wire [3:0] frame_length,
+  input wire [7:0] tx_din,
+  input wire parity_type,
+  input wire parity_en,
+  input wire stop2,
   output reg tx,
   output reg tx_done
 );
@@ -17,12 +21,12 @@ module Transmitter #(parameter DATA_BITS = 8, SB_TICKS = 1, IS_PARITY = 0, PARIT
 
   state current_state, next_state;
   
-  reg [DATA_BITS - 1:0] bits;
+  reg [7:0] bits;
   reg [3:0] data_counter, stop_bits_counter;
   reg parity;
   
   // Sequential block
-  always @(posedge tx_tick or posedge tx_start or negedge reset)
+  always @(posedge tx_tick or negedge reset)
     if (~reset) current_state = IDLE;
     else current_state = next_state;
 
@@ -49,11 +53,11 @@ module Transmitter #(parameter DATA_BITS = 8, SB_TICKS = 1, IS_PARITY = 0, PARIT
       DATA: begin
         if(!tx_tick) next_state = DATA;
         else begin
-          if(data_counter == DATA_BITS) begin
+          if(data_counter == frame_length) begin
             data_counter = 0;
             next_state = STOP;
-            if(IS_PARITY) begin
-              parity = (PARITY == 1) ? ~parity : parity;   // If 1 odd
+            if(parity_en) begin
+              parity = (parity_type) ? ~parity : parity; // If 1 odd
               tx = parity;
             end else tx = 1;
           end else begin
@@ -70,7 +74,7 @@ module Transmitter #(parameter DATA_BITS = 8, SB_TICKS = 1, IS_PARITY = 0, PARIT
         tx = 1;
         if(!tx_tick) next_state = STOP;
         else begin
-          if(stop_bits_counter == (SB_TICKS + IS_PARITY) - 1) begin
+          if(stop_bits_counter == (stop2 + parity_en)) begin
             tx_done = 1;
             next_state = IDLE;
           end else begin
