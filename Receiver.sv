@@ -1,8 +1,12 @@
-module Receiver #(parameter DATA_BITS = 8, SB_TICKS = 1, IS_PARITY = 0, PARITY = 0) (
+module Receiver (
   input wire rx,
   input wire rx_tick,
   input wire reset,
-  output reg [DATA_BITS - 1:0] rx_dout,
+  input wire [3:0] frame_length,
+  input wire parity_type,
+  input wire parity_en,
+  input wire stop2,
+  output reg [7:0] rx_dout,
   output reg rx_done,
   output reg correct
 );
@@ -17,7 +21,7 @@ module Receiver #(parameter DATA_BITS = 8, SB_TICKS = 1, IS_PARITY = 0, PARITY =
 
   state current_state, next_state;
   
-  reg [DATA_BITS - 1:0] bits;
+  reg [7:0] bits;
   reg [3:0] data_counter, stop_bits_counter;
   reg parity_calculated, parity_received, finish_data;
   
@@ -46,17 +50,17 @@ module Receiver #(parameter DATA_BITS = 8, SB_TICKS = 1, IS_PARITY = 0, PARITY =
         if(!rx_tick) next_state = DATA;
         else if(finish_data) next_state = STOP;
         else begin
-          if(data_counter == DATA_BITS) begin
+          if(data_counter == frame_length) begin
             data_counter = 0;
             finish_data = 1;
             next_state = STOP;
-            if(IS_PARITY) begin
+            if(parity_en) begin
               parity_received = rx;
-              parity_calculated = (PARITY == 1) ? ~parity_calculated : parity_calculated;   // If 1 odd
+              parity_calculated = (parity_type) ? ~parity_calculated : parity_calculated;   // If 1 odd
             end
           end else begin
             next_state = DATA;
-            bits = {rx, bits[DATA_BITS - 1:1]};   // Shifting right
+            bits = {rx, bits[7:1]};   // Shifting right
           	data_counter = data_counter + 1;
             parity_calculated = parity_calculated ^ rx;
           end
@@ -66,7 +70,7 @@ module Receiver #(parameter DATA_BITS = 8, SB_TICKS = 1, IS_PARITY = 0, PARITY =
       STOP: begin
         if(!rx_tick) next_state = STOP;
         else begin
-          if(stop_bits_counter == SB_TICKS - 1) begin
+          if(stop_bits_counter == stop2) begin
             rx_done = 1;
             rx_dout = bits;
             next_state = IDLE;
