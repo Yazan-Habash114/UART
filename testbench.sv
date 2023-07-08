@@ -1,18 +1,32 @@
 // Code your testbench here
 // or browse Examples
 module UART_Test;
-  parameter DATA_BITS = 8, SB_TICKS = 2, IS_PARITY = 1, PARITY = 0;
   
   parameter CLK_PERIOD = 10;
   
-  reg clk, reset, rx, tx_start;
-  reg [DATA_BITS - 1:0] tx_data_in;
-  reg [31:0] ticks_per_bit;
+  reg clk, reset, rx, tx_start, parity_type, parity_en, stop2;
+  reg [1:0] baud;
+  reg [3:0] frame_length;
+  reg [7:0] tx_data_in;
   wire correct, rx_done, tx_done, tx;
-  wire [DATA_BITS - 1:0] rx_data_out;
+  wire [7:0] rx_data_out;
   
-  UART #(DATA_BITS, SB_TICKS, IS_PARITY, PARITY) dut(
-    clk, reset, ticks_per_bit, rx, tx_start, tx_data_in, correct, rx_done, tx_done, tx, rx_data_out
+  UART dut(
+    .clk(clk),
+    .reset(reset),
+    .rx(rx),
+    .tx_start(tx_start),
+    .parity_type(parity_type),
+    .parity_en(parity_en),
+    .stop2(stop2),
+    .baud(baud),
+    .frame_length(frame_length),
+    .tx_data_in(tx_data_in),
+    .correct(correct),
+    .rx_done(rx_done),
+    .tx_done(tx_done),
+    .tx(tx),
+    .rx_data_out(rx_data_out)
   );
   
   always #(CLK_PERIOD / 2) clk = ~clk;
@@ -23,36 +37,40 @@ module UART_Test;
     
     clk = 0;
     reset = 1;
-    ticks_per_bit = 2;   // Tick half cycle = (2+1) * CLK_PERIOD
-			 // Hence, cycle = 3 * 10 * 2 = 60ns
+    baud = 2'b11;
+    
     tx_start = 0;
-    tx_data_in = 8'hb4;  // Even parity = 0
+    frame_length = 8;
+    tx_data_in = 8'hB4;  // Even parity = 0
     rx = 1;
+    parity_en = 1;
+    parity_type = 0;
+    stop2 = 1;
     
     reset = 0;
-    #(CLK_PERIOD);
+    #3000;
     
     reset = 1;
     
     // Start Receiving (0x9A)
-    #((ticks_per_bit + 1) * 2 * CLK_PERIOD) rx = 0;   // Start bit
-    #((ticks_per_bit + 1) * 2 * CLK_PERIOD) rx = 0;   // D0
-    #((ticks_per_bit + 1) * 2 * CLK_PERIOD) rx = 1;   // D1
-    #((ticks_per_bit + 1) * 2 * CLK_PERIOD) rx = 0;   // D2
-    #((ticks_per_bit + 1) * 2 * CLK_PERIOD) rx = 1;   // D3
-    #((ticks_per_bit + 1) * 2 * CLK_PERIOD) rx = 1;   // D4
-    #((ticks_per_bit + 1) * 2 * CLK_PERIOD) rx = 0;   // D5
-    #((ticks_per_bit + 1) * 2 * CLK_PERIOD) rx = 0;   // D6
-    #((ticks_per_bit + 1) * 2 * CLK_PERIOD) rx = 1;   // D7
-    #((ticks_per_bit + 1) * 2 * CLK_PERIOD) rx = 0;   // Even parity
-    #((ticks_per_bit + 1) * 2 * CLK_PERIOD) rx = 1;   // Stop bit
-    #((ticks_per_bit + 1) * 2 * CLK_PERIOD) rx = 1;   // Stop bit
-    #((ticks_per_bit + 1) * 2 * CLK_PERIOD) rx = 1;   // Idle again
+    #2620 rx = 0;   // Start bit
+    #2620 rx = 0;   // D0
+    #2620 rx = 1;   // D1
+    #2620 rx = 0;   // D2
+    #2620 rx = 1;   // D3
+    #2620 rx = 1;   // D4
+    #2620 rx = 0;   // D5
+    #2620 rx = 0;   // D6
+    #2620 rx = 1;   // D7
+    #2620 rx = 0;   // Even parity
+    #2620 rx = 1;   // Stop bit
+    #2620 rx = 1;   // Stop bit
+    #2620 rx = 1;   // Idle again
     
     // Start Transmitting
-    #((ticks_per_bit + 1) * CLK_PERIOD) tx_start = 1;
-    #((ticks_per_bit + 1) * 2 * CLK_PERIOD + CLK_PERIOD) tx_start = 0;
+    #2602 tx_start = 1;
+    #3000 tx_start = 0;
     
-    #1000 $finish;
+    #50000 $finish;
   end
 endmodule
