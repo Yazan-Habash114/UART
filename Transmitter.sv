@@ -12,7 +12,7 @@ module Transmitter (
 );
   
   // Define state enumeration
-  typedef enum logic [3:0] {
+  typedef enum logic [1:0] {
     IDLE,
     START,
     DATA,
