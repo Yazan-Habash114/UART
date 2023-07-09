@@ -12,9 +12,8 @@ module Receiver (
 );
   
   // Define state enumeration
-  typedef enum logic [3:0] {
+  typedef enum logic [1:0] {
     IDLE,
-    START,
     DATA,
     STOP
   } state;
@@ -31,7 +30,7 @@ module Receiver (
     else current_state = next_state;
 
   // Combinational logic for next state
-  always @(posedge rx_tick or rx or current_state) begin
+  always @(posedge rx_tick or current_state) begin
     case (current_state)
       IDLE: begin
         if(rx) begin
@@ -41,10 +40,8 @@ module Receiver (
           rx_done = 0;
           finish_data = 0;
           parity_calculated = 0;
-        end else next_state = START;
+        end else next_state = DATA;
       end
-      
-      START: next_state = (rx_tick) ? DATA : START;
       
       DATA: begin
         if(!rx_tick) next_state = DATA;
